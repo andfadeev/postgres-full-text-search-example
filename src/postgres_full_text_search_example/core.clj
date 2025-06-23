@@ -26,6 +26,23 @@
       ["select * from articles;"]
       jdbc/unqualified-snake-kebab-opts)))
 
+(defn search-articles
+  [search-query]
+  (with-open [database-container (postgres-container)
+              conn (jdbc/get-connection
+                     {:jdbcUrl (.getJdbcUrl database-container)
+                      :user (.getUsername database-container)
+                      :password (.getPassword database-container)})]
+    (jdbc/execute!
+      conn
+      ["SELECT id, title, subtitle, content, 
+        ts_rank(search_vector, plainto_tsquery('english', ?)) AS rank
+        FROM articles
+        WHERE search_vector @@ plainto_tsquery('english', ?)
+        ORDER BY rank DESC;" 
+       search-query search-query]
+      jdbc/unqualified-snake-kebab-opts)))
+
 (defn -main
   []
-  (do-things!))
+  (search-articles "Cybersecurity"))
