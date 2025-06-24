@@ -1,32 +1,65 @@
 # postgres-full-text-search-example
 
-FIXME: description
+A simple example project demonstrating PostgreSQL full-text search capabilities with Clojure.
 
-## Installation
+## Features
 
-Download from http://example.com/FIXME.
+This project demonstrates two approaches to PostgreSQL full-text search:
+
+1. Using pre-calculated search vectors stored in the database
+2. Building search vectors dynamically in the query
 
 ## Usage
 
-FIXME: explanation
+The project provides two main search functions:
 
-    $ java -jar postgres-full-text-search-example-0.1.0-standalone.jar [args]
+### 1. search-articles
 
-## Options
+This function uses the pre-calculated `search_vector` column from the database:
 
-FIXME: listing of options this app accepts.
+```clojure
+(search-articles "your search query")
+```
 
-## Examples
+### 2. search-articles-dynamic
 
-...
+This function builds the search vector dynamically in the query instead of using the pre-calculated column:
 
-### Bugs
+```clojure
+(search-articles-dynamic "your search query")
+```
 
-...
+Both functions return the same structure of results, but the dynamic version may be useful when:
+- You need to search across columns not included in the pre-calculated vector
+- You want to use different weights for different search contexts
+- The search vector definition needs to change frequently
 
-### Any Other Sections
-### That You Think
-### Might be Useful
+## Running the examples
+
+You can run the example functions in a REPL:
+
+```clojure
+;; Get all articles
+(get-articles-demo)
+
+;; Search using pre-calculated search vector
+(search-demo)
+
+;; Search using dynamically built search vector
+(search-demo-dynamic)
+
+;; Demo of creating and updating articles
+(create-update-demo)
+```
+
+## Implementation Details
+
+The database schema creates a `search_vector` column that is automatically generated from the title, subtitle, and content columns with different weights:
+- Title: Weight A (highest)
+- Subtitle: Weight B (medium)
+- Content: Weight C (lowest)
+
+The dynamic search function builds the same vector structure directly in the query.
 
 ## License
 

@@ -71,13 +71,48 @@
       (println "Updated article:")
       (clojure.pprint/pprint updated-article))))
 
+(defn search-articles-dynamic
+  [search-query]
+  (with-open [database-container (postgres-container)
+              conn (jdbc/get-connection
+                     {:jdbcUrl (.getJdbcUrl database-container)
+                      :user (.getUsername database-container)
+                      :password (.getPassword database-container)})]
+    (jdbc/execute!
+      conn
+      ["SELECT id,
+        title,
+        subtitle
+        content,
+        ts_rank(
+          setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
+          setweight(to_tsvector('english', coalesce(subtitle, '')), 'B') ||
+          setweight(to_tsvector('english', coalesce(content, '')), 'C'),
+          plainto_tsquery('english', ?)
+        ) AS rank
+        FROM articles
+        WHERE 
+          setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
+          setweight(to_tsvector('english', coalesce(subtitle, '')), 'B') ||
+          setweight(to_tsvector('english', coalesce(content, '')), 'C') @@ plainto_tsquery('english', ?)
+        ORDER BY rank DESC;" 
+       search-query search-query]
+      jdbc/unqualified-snake-kebab-opts)))
+
 (defn search-demo
   []
-  (let [results (search-articles "AI")]
+  (let [results (search-articles "Future AI")]
     (println "Search results:")
+    (clojure.pprint/pprint results)))
+
+(defn search-demo-dynamic
+  []
+  (let [results (search-articles-dynamic "Future AI")]
+    (println "Search results (dynamic):")
     (clojure.pprint/pprint results)))
 
 (comment
   (get-articles-demo)
   (search-demo)
+  (search-demo-dynamic)
   (create-update-demo))
